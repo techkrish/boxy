@@ -10,7 +10,7 @@ Think of this as a growing unit test for data.
 import argparse
 import json
 
-from boxy.common import constants
+from common import constants
 
 
 def check_out_of_bounds(labels):

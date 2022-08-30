@@ -11,7 +11,7 @@ import os
 import subprocess
 import tqdm
 
-from boxy.common import helper_scripts
+from common import helper_scripts
 
 # Set path before use!
 OD_DIR = '/TODO/tensorflow/models/research/object_detection'

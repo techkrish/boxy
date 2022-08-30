@@ -31,7 +31,7 @@ import tensorflow as tf
 import tqdm
 import yaml
 
-from boxy.common import constants
+from common import constants
 
 
 def clip_float(value):
@@ -75,6 +75,9 @@ class SampleData:
         self.ymin = []
         self.ymax = []
 
+        self.class_label = []
+        self.class_text = []
+
     def _coordinate_value_lists(self):
         return [self.xmin, self.xmax, self.ymin, self.ymax]
 
@@ -86,16 +89,27 @@ class SampleData:
         self.ymin = list(map(mapping, self.ymin))
         self.ymax = list(map(mapping, self.ymax))
 
-    def get_bbox_values(self, labels):
+    def get_bbox_values_complete(self, labels):
         for vehicle in labels[self.image_id]['vehicles']:
             aabb = vehicle['AABB']
             xmin = aabb['x1']
             xmax = aabb['x2']
             ymin = aabb['y1']
             ymax = aabb['y2']
-            for container_list, value in zip(self._coordinate_value_lists(),
-                                             [xmin, xmax, ymin, ymax]):
+
+            for container_list, value in zip(self._coordinate_value_lists(), [xmin, xmax, ymin, ymax]):
                 container_list.append(value)
+            self.class_label.append(1)
+
+            if vehicle['rear']:
+                rear = vehicle['rear']
+                xmin = rear['x1']
+                xmax = rear['x2']
+                ymin = rear['y1']
+                ymax = rear['y2']
+                for container_list, value in zip(self._coordinate_value_lists(), [xmin, xmax, ymin, ymax]):
+                    container_list.append(value)
+                self.class_label.append(2)
 
     def transform_annotations(self, crop_window):
         """ Transforms annotations based on crop_window """
@@ -167,28 +181,29 @@ class SampleData:
         assert all([0.0 <= value <= 1.0 for value_list in self._coordinate_value_lists() for value in value_list])
 
     def write_to_tfrecord(self, tfrecord_writer):
-        image = cv2.resize(self.image, (self.out_width, self.out_height))
-        ret_val, image = cv2.imencode('.png', image)
-        image = image.tostring()
-        sha256 = hashlib.sha256(image).hexdigest()
-        complete_example = tf.train.Example(features=tf.train.Features(feature={
-            'image/height': dataset_util.int64_feature(self.out_height),
-            'image/width': dataset_util.int64_feature(self.out_width),
-            'image/filename': dataset_util.bytes_feature(self.image_path.encode('utf8')),
-            'image/encoded': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image])),
-            'image/format': dataset_util.bytes_feature(self.image_format.encode('utf8')),
-            'image/source_id': dataset_util.bytes_feature(self.image_crop_id.encode('utf8')),
-            'image/key/sha256': dataset_util.bytes_feature(sha256.encode('utf8')),
-            'image/object/bbox/xmin': dataset_util.float_list_feature(self.xmin),
-            'image/object/bbox/xmax': dataset_util.float_list_feature(self.xmax),
-            'image/object/bbox/ymin': dataset_util.float_list_feature(self.ymin),
-            'image/object/bbox/ymax': dataset_util.float_list_feature(self.ymax),
-            'image/object/class/text': dataset_util.bytes_list_feature(
-                ['complete'.encode('utf8')] * len(self.xmin)),
-            'image/object/class/label': dataset_util.int64_list_feature(
-                [1] * len(self.xmin)),
-        }))
-        tfrecord_writer.write(complete_example.SerializeToString())
+        try:
+            image = cv2.resize(self.image, (self.out_width, self.out_height))
+            ret_val, image = cv2.imencode('.png', image)
+            image = image.tostring()
+            sha256 = hashlib.sha256(image).hexdigest()
+            complete_example = tf.train.Example(features=tf.train.Features(feature={
+                'image/height': dataset_util.int64_feature(self.out_height),
+                'image/width': dataset_util.int64_feature(self.out_width),
+                'image/filename': dataset_util.bytes_feature(self.image_path.encode('utf8')),
+                'image/encoded': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image])),
+                'image/format': dataset_util.bytes_feature(self.image_format.encode('utf8')),
+                'image/source_id': dataset_util.bytes_feature(self.image_crop_id.encode('utf8')),
+                'image/key/sha256': dataset_util.bytes_feature(sha256.encode('utf8')),
+                'image/object/bbox/xmin': dataset_util.float_list_feature(self.xmin),
+                'image/object/bbox/xmax': dataset_util.float_list_feature(self.xmax),
+                'image/object/bbox/ymin': dataset_util.float_list_feature(self.ymin),
+                'image/object/bbox/ymax': dataset_util.float_list_feature(self.ymax),
+                'image/object/class/text': dataset_util.bytes_list_feature(self.class_text),
+                'image/object/class/label': dataset_util.int64_list_feature(self.class_label),
+            }))
+            tfrecord_writer.write(complete_example.SerializeToString())
+        except:
+            print('Error')
 
 
 def create_tf_object_detection_tfrecords(
@@ -235,37 +250,37 @@ def create_tf_object_detection_tfrecords(
             base_path = key
             # NOTE replaces .png with .png if image_format is png, TODO os.path.splitext
             base_path = base_path.replace('.png', '.' + config['image_format'])
-            image_path = os.path.join(config['image_folder'], base_path)
-            original_image = cv2.imread(image_path)
-            if original_image is None:
-                raise IOError('Could not read {} \n Are the image folders'
-                              'and formats correct?'.format(image_path))
+            image_path = os.path.join(config['image_folder'], base_path.replace('./', ''))
+            if os.path.exists(image_path):
+                original_image = cv2.imread(image_path)
+                if original_image is None:
+                    raise IOError('Could not read {} \n Are the image folders'
+                                  'and formats correct?'.format(image_path))
+                for crop_num in range(config['crops_per_image']):
+                    # randint includes both ends
+                    min_x = randint(0, constants.WIDTH - config['crop_input_width'])
+                    min_y = randint(0, constants.HEIGHT - config['crop_input_height'])
+                    crop_window = {
+                        # NOTE did not check if max_crop_x and y are correct
+                        'min_x': min_x,
+                        'max_x': min_x + config['crop_input_width'],
+                        'min_y': min_y,
+                        'max_y': min_y + config['crop_input_height'],
+                    }
 
-            for crop_num in range(config['crops_per_image']):
-                # randint includes both ends
-                min_x = randint(0, constants.WIDTH - config['crop_input_width'])
-                min_y = randint(0, constants.HEIGHT - config['crop_input_height'])
-                crop_window = {
-                    # NOTE did not check if max_crop_x and y are correct
-                    'min_x': min_x,
-                    'max_x': min_x + config['crop_input_width'],
-                    'min_y': min_y,
-                    'max_y': min_y + config['crop_input_height'],
-                }
+                    sd = SampleData(
+                        image=original_image[crop_window['min_y']:crop_window['max_y'],
+                                             crop_window['min_x']:crop_window['max_x']],
+                        key=key, config=config, crop_number=crop_num)
+                    sd.get_bbox_values_complete(labels)
+                    sd.transform_annotations(crop_window)
+                    sd.filter_too_small_annotations()
+                    sd.basic_checks()
+                    if sd.check_for_one_annotation():
+                        sd.write_to_tfrecord(tfrecord_writer)
 
-                sd = SampleData(
-                    image=original_image[crop_window['min_y']:crop_window['max_y'],
-                                         crop_window['min_x']:crop_window['max_x']],
-                    key=key, config=config, crop_number=crop_num)
-                sd.get_bbox_values(labels)
-                sd.transform_annotations(crop_window)
-                sd.filter_too_small_annotations()
-                sd.basic_checks()
-                if sd.check_for_one_annotation():
-                    sd.write_to_tfrecord(tfrecord_writer)
-
-            if max_samples and i * config['crops_per_image'] >= max_samples:
-                break
+                if max_samples and i * config['crops_per_image'] >= max_samples:
+                    break
 
 
 def create_datasets(tfrecords_config_path, max_valid):

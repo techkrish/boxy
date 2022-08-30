@@ -15,9 +15,9 @@ import numpy
 import tensorflow as tf
 import tqdm
 
-from boxy.common.helper_scripts import get_files_from_folder
-from boxy.common.helper_scripts import get_label_base
-from boxy.common.helper_scripts import tir
+from common.helper_scripts import get_files_from_folder
+from common.helper_scripts import get_label_base
+from common.helper_scripts import tir
 
 DEBUG = True
 

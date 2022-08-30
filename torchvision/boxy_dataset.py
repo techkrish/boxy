@@ -12,8 +12,8 @@ import numpy as np
 import torch
 from PIL import Image
 
-from boxy.common import helper_scripts
-from boxy.label_file_scripts import label_reader
+from common import helper_scripts
+from label_file_scripts import label_reader
 
 
 class BoxyDataset(object):

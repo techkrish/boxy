@@ -19,8 +19,8 @@ import transforms as T
 import torch
 from torchvision.models.detection import faster_rcnn
 
-from boxy_dataset import BoxyDataset
-from boxy.common import constants
+from torchvision.boxy_dataset import BoxyDataset
+from common import constants
 
 import transforms as T
 
