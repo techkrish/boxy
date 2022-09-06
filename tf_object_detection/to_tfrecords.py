@@ -220,7 +220,7 @@ class SampleData:
 
 
 def create_tf_object_detection_tfrecords(
-        labels, tfrecord_file, config, max_samples):
+        labels, tfrecord_file, config, max_samples=0):
     """ Creates a tfrecord dataset split specific to tf's objection_detection module
     The created dataset is stored to file and may take up to a TB of space.
     The tfrecords only contain axis-aligned bounding boxes!
@@ -296,7 +296,7 @@ def create_tf_object_detection_tfrecords(
                     break
 
 
-def create_datasets(tfrecords_config_path, max_valid):
+def create_datasets(tfrecords_config_path, max_valid=0):
     """Calls tfrecord creation for individual dataset splits
     Reads config for tfrecord creation settings, splits datasets, and creates
     the individual sets
