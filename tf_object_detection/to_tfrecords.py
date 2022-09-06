@@ -111,6 +111,19 @@ class SampleData:
                     container_list.append(value)
                 self.class_label.append(2)
 
+            if vehicle['side']:
+                side = vehicle['side']
+                x_list = []
+                y_list = []
+                for point in side:
+                    x = side[point].get('x')
+                    y = side[point].get('y')
+                    x_list.append(x)
+                    y_list.append(y)
+                for container_list, value in zip(self._coordinate_value_lists(), [min(x_list), max(x_list), min(y_list), max(y_list)]):
+                    container_list.append(value)
+                self.class_label.append(3)
+
     def transform_annotations(self, crop_window):
         """ Transforms annotations based on crop_window """
         self.input_crop_min_x = crop_window['min_x']
@@ -184,7 +197,7 @@ class SampleData:
         try:
             image = cv2.resize(self.image, (self.out_width, self.out_height))
             ret_val, image = cv2.imencode('.png', image)
-            image = image.tostring()
+            image = image.tobytes()
             sha256 = hashlib.sha256(image).hexdigest()
             complete_example = tf.train.Example(features=tf.train.Features(feature={
                 'image/height': dataset_util.int64_feature(self.out_height),
@@ -207,7 +220,7 @@ class SampleData:
 
 
 def create_tf_object_detection_tfrecords(
-        labels, tfrecord_file, config, max_samples=0):
+        labels, tfrecord_file, config, max_samples):
     """ Creates a tfrecord dataset split specific to tf's objection_detection module
     The created dataset is stored to file and may take up to a TB of space.
     The tfrecords only contain axis-aligned bounding boxes!

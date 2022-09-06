@@ -5,10 +5,10 @@ AABB to AABB
 Polygon to Polygon
 """
 
-from boxy.evaluation.result import Result
-from boxy.evaluation import polygon_iou
-from boxy.common import constants
-from boxy.common import helper_scripts
+from evaluation.result import Result
+from evaluation import polygon_iou
+from common import constants
+from common import helper_scripts
 
 
 def __debug_view(detections, targets):

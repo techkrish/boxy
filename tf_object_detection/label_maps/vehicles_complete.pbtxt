@@ -7,3 +7,7 @@ item {
   id: 2
   name: 'rear'
 }
+item {
+  id: 3
+  name: 'side'
+}

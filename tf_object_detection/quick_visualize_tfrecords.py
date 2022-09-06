@@ -42,7 +42,7 @@ def visual_inspection(tfrecords_path, min_height=0, min_width=0, classes=None, d
     """
 
     if classes is None:
-        classes = [0, 1, 2]
+        classes = [0, 1, 2, 3]
 
     # TODO Deprecated. Should be replaced.
     record_iterator = tf.compat.v1.io.tf_record_iterator(tfrecords_path)
@@ -88,8 +88,8 @@ def visual_inspection(tfrecords_path, min_height=0, min_width=0, classes=None, d
                                    int(round(ymin[box] * height))),
                                   (int(round(xmax[box] * width)),
                                    int(round(ymax[box] * height))),
-                                  (0, 255, 0),
-                                  3)
+                                  (0, 0, 255),
+                                  1)
                 if class_ids[box] == 2:
                     cv2.rectangle(image,
                                   (int(round(xmin[box] * width)),
@@ -97,7 +97,15 @@ def visual_inspection(tfrecords_path, min_height=0, min_width=0, classes=None, d
                                   (int(round(xmax[box] * width)),
                                    int(round(ymax[box] * height))),
                                   (255, 0, 0),
-                                  3)
+                                  1)
+                if class_ids[box] == 3:
+                    cv2.rectangle(image,
+                                  (int(round(xmin[box] * width)),
+                                   int(round(ymin[box] * height))),
+                                  (int(round(xmax[box] * width)),
+                                   int(round(ymax[box] * height))),
+                                  (0, 255, 0),
+                                  1)
 
             if debug_info:
                 print('xmin', list(map(lambda x: x * image.shape[1], xmin)))

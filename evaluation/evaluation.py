@@ -19,9 +19,9 @@ import pdb
 
 import tqdm
 
-from boxy.common import constants
-from boxy.common import helper_scripts
-from boxy.evaluation import single_image_metrics as sim
+from common import constants
+from common import helper_scripts
+from evaluation import single_image_metrics as sim
 
 
 def __count_annotation_objects(result_list, min_size):

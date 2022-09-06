@@ -18,7 +18,7 @@ crop_output_height: 1024
 # Since the crops are randomly sampled accross the image, we can take multiple crops
 # Set this to 1 if your crop_input_width equals 2464x2056 (the raw images). You don't
 # want 5 copies of the same image :)
-crops_per_image: 1
+crops_per_image: 3
 
 # Specs for the classification tfrecords. Not used for detection
 vehicle_crop_size: 256
@@ -39,9 +39,9 @@ valid_labels_json: '/data/bluefox_dataset/boxy_labels_valid.json'
 image_folder : '/data/bluefox_dataset/images_raw'
 image_format: 'png'  # png or jpg
 
-tfrecords_folder: '/data/bluefox_dataset/tfrecords_raw_divided_vehicles/'
+tfrecords_folder: '/data/bluefox_dataset/tfrecords_debug/'
 
 divided: True
-train_tfrecords : 'complete_train_1024_rear_side_debug.tfrecords'
-valid_tfrecords : 'complete_valid_1024_rear_side_debug.tfrecords'
-test_tfrecords : 'complete_test.tfrecords'
+train_tfrecords : 'complete_train_1024_debug_v2.tfrecords'
+valid_tfrecords : 'complete_valid_1024_debug_v2.tfrecords'
+#test_tfrecords : 'complete_test.tfrecords'
